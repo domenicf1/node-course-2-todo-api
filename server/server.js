@@ -1,3 +1,5 @@
+require('./config/config');
+
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -8,7 +10,7 @@ var { Todo } = require('./models/todo');
 var { User } = require('./models/user');
 
 var app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
@@ -43,7 +45,7 @@ app.get('/todos/:id', (req, res) => {
         if (!todo) {
             return res.status(404).send();
         }
-        res.status(200).send({todo});
+        res.status(200).send({ todo });
     }).catch((e) => res.status(400).send());
 
 });
@@ -59,7 +61,7 @@ app.delete('/todos/:id', (req, res) => {
         if (!todo) {
             return res.status(404).send();
         }
-        res.status(200).send({todo});
+        res.status(200).send({ todo });
     }).catch((e) => res.status(400).send());
 
 });
@@ -72,21 +74,38 @@ app.patch('/todos/:id', (req, res) => {
         return res.status(404).send();
     }
 
-    if(_.isBoolean(body.completed) && body.completed){
+    if (_.isBoolean(body.completed) && body.completed) {
         body.completedAt = new Date().getTime();
     }
-    else{
+    else {
         body.completed = false;
         body.completeAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, {$set: body}, {new:true}).then((todo) => {
+    Todo.findByIdAndUpdate(id, { $set: body }, { new: true }).then((todo) => {
         if (!todo) {
             return res.status(404).send();
         }
-        res.status(200).send({todo});
+        res.status(200).send({ todo });
     }).catch((e) => res.status(400).send());
 
+});
+
+app.post('/user', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password'])
+
+    var newUser = new User(
+        body
+    );
+
+    newUser.save().then(() => {
+        return newUser.generateAuthToken();
+        //res.status(200).send(doc);
+    }).then((token) => {
+        res.header('x-auth', token).status(200).send(newUser);
+    }).catch((err) => {
+        res.status(400).send(err);
+    });
 });
 
 
